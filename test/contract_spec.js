@@ -62,7 +62,7 @@ contract("MyERC20", function () {
       });
       it('any account should have the tokens transfered to it', async () => {
         let holder = accounts[1];
-        const amount = toWei(TOKEN_COUNT - 10);
+        const amount = toWei(10);
         await MyERC20.transfer(holder, amount).send({ from: owner });
         const balance = await MyERC20.methods.balanceOf(holder).call();
         balance.should.be.bignumber.equal(amount);
