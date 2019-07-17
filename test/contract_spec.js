@@ -3,14 +3,16 @@ const MyERC20 = require('Embark/contracts/MyERC20');
 // const BigNumber = Web3.BigNumber;
 // const BigNumber = require('bn.js');
 // const BigNumber = web3.utils.BN; //Ethers.BigNumber;
-const BigNumber = web3.BigNumber;
+// const BigNumber = web3.utils.BN;
+const { toWei } = web3.utils;
+// const chai = require('chai');
 // const a = Web3.Ethers.BigNumber;
-const mlog = require('mocha-logger');
-const util = require('util');
+// const mlog = require('mocha-logger');
+// const util = require('util');
 
-require('chai')
-  .use(require('chai-bignumber')(BigNumber))
-  .should();
+require('chai').should();
+  //.use(require('chai-bignumber')(BigNumber))
+  // .should();
 
 let accounts;
 
@@ -34,7 +36,7 @@ config({
 contract("MyERC20", function () {
   this.timeout(0);
 
-  const TOKEN_COUNT = 1000000;
+  const TOKEN_COUNT = '1000000';
 
   describe('Given that I have a Token Contract', () => {
     it('it should have the correct name', async () => {
@@ -47,29 +49,31 @@ contract("MyERC20", function () {
     });
     it('it should have the correct decimal level', async () => {
       const decimals = await MyERC20.decimals();
-      decimals.should.be.bignumber.equal(18);
+      assert.equal(decimals, '18');
     });
 
     describe('Given that I have a fixed supply of tokens', () => {
       it('it should return the total supply of tokens for the Contract', async () => {
         const supply = await MyERC20.totalSupply();
-        supply.should.be.bignumber.equal(toWei(TOKEN_COUNT));
+        //assert.equal(supply, toWei(TOKEN_COUNT));
+        supply.should.be.equal(toWei(TOKEN_COUNT));
       });
       it('the owner should have all the tokens when the Contract is created', async () => {
         let owner = accounts[0];
         const balance = await MyERC20.methods.balanceOf(owner).call();
-        balance.should.be.bignumber.equal(toWei(TOKEN_COUNT));
+        assert.equal(balance, toWei(TOKEN_COUNT));
       });
       it('any account should have the tokens transfered to it', async () => {
+        let owner = accounts[0];
         let holder = accounts[1];
-        const amount = toWei(10);
-        await MyERC20.transfer(holder, amount).send({ from: owner });
+        const amount = toWei('10');
+        await MyERC20.methods.transfer(holder, amount).send({ from: owner });
         const balance = await MyERC20.methods.balanceOf(holder).call();
-        balance.should.be.bignumber.equal(amount);
+        assert.equal(balance, amount);
       });
       it('an address that has no tokens should return a balance of zero', async () => {
         const balance = await MyERC20.methods.balanceOf("0x0000000000000000000000000000000000000000").call();
-        balance.should.be.bignumber.equal(0);
+        assert.equal(balance, '0');
       });
     
       describe('Given that I want to be able to transfer tokens', () => {
@@ -96,7 +100,7 @@ contract("MyERC20", function () {
         it('it should emit a Transfer Event', async () => {
           let owner = accounts[0];
           let holder = accounts[1];
-          const amount = toWei(10);
+          const amount = toWei('10');
           const { events } = await MyERC20.methods.transfer(holder, amount).send({ from: owner });
 
           assert.ok(events.Transfer, 'No Transfer Event emitted');
@@ -110,30 +114,30 @@ contract("MyERC20", function () {
           it('allowance should return the amount I allow them to transfer', async () => {
             let owner = accounts[0];
             let holder = accounts[1];
-            const amount = toWei(99);
+            const amount = toWei('99');
             await MyERC20.approve(holder, amount, { from: owner });
             const remaining = await MyERC20.methods.allowance(owner, holder).call();
-            remaining.should.be.bignumber.equal(amount);
+            assert.equal(remaining, amount);
           });
           it('allowance should return the amount another allows a third account to transfer', async () => {
             let owner = accounts[0];
             let holder = accounts[1];
             let receiver = accounts[2];
-            const amount = toWei(98);
-            await MyERC20.methods.transfer(holder, toWei(100))
+            const amount = toWei('98');
+            await MyERC20.methods.transfer(holder, toWei('100'))
             await MyERC20.methods.approve(receiver, amount).send({ from: holder });
             const remaining = await MyERC20.methods.allowance(holder, receiver).call();
-            remaining.should.be.bignumber.equal(amount);
+            assert.equal(remaining, amount);
           });
           it('allowance should return zero if none have been approved for the account', async () => {
             let owner = accounts[0];
             const remaining = await MyERC20.methods.allowance(owner, "0x0000000000000000000000000000000000000000").call();
-            remaining.should.be.bignumber.equal(0);
+            assert.equal(remaining, '0');
           });
           it('it should emit an Approval event when the approve method is successfully called', async () => {
             let owner = accounts[0];
             let holder = accounts[1];
-            const amount = toWei(97);
+            const amount = toWei('97');
             const { events } = await MyERC20.methods.approve(holder, amount).send({ from: owner });
 
             assert.ok(events.Approval, 'No Approval Event emitted');
@@ -143,24 +147,24 @@ contract("MyERC20", function () {
             let owner = accounts[0];
             let holder = accounts[1];
             let receiver = accounts[2];
-            const tokenAmount = 96;
+            const tokenAmount = '96';
             const amount = toWei(tokenAmount);
             await MyERC20.methods.approve(holder, amount).send({ from: owner });
             await MyERC20.methods.transferFrom(owner, receiver, amount).send({ from: holder });
             const balance = await MyERC20.methods.balanceOf(receiver).call({ from: receiver });
 
-            balance.should.be.bignumber.equal(toWei(tokenAmount));
+            assert.equal(balance, toWei(tokenAmount));
           });
           it('the account funds are being transferred from should have sufficient funds', async () => {
             let owner = accounts[0];
             let receiver = accounts[2];
             var hasError = true;
             try {
-              const balance99 = toWei(99);
+              const balance99 = toWei('99');
               await MyERC20.transfer(accountWith99, balance99, { from: owner })
               const balance = await MyERC20.methods.balanceOf(accountWith99).call();
-              balance.should.be.bignumber.equal(balance99);
-              const amount = toWei(100);
+              assert.equal(balance, toWei(balance99));
+              const amount = toWei('100');
 
               await MyERC20.methods.approve(receiver, amount).send({ from: accountWith99 });
               await MyERC20.methods.transferFrom(accountWith99, nilAddress, amount).send({ from: receiver });
@@ -174,10 +178,10 @@ contract("MyERC20", function () {
             var hasError = true;
             try {
               const remaining = await MyERC20.methods.allowance(owner, nilAddress).call();
-              remaining.should.be.bignumber.equal(toWei(0));
+              remaining.should.be.bignumber.equal(toWei('0'));
               var holderBalance = await MyERC20.methods.balanceOf(holder).call();
-              holderBalance.should.be.bignumber.equal(toWei(0));
-              const amount = toWei(101);
+              assert.equal(holderBalance, toWei('0'));
+              const amount = toWei('101');
 
               await MyERC20.methods.transferFrom(owner, holder, amount).send({ from: "0x0000000000000000000000000000000000000000" });
               asError = false;
@@ -188,24 +192,23 @@ contract("MyERC20", function () {
             let owner = accounts[0];
             let holder = accounts[1];
             let receiver = accounts[2];
-            const amount = toWei(15);
+            const amount = toWei('15');
             await MyERC20.methods.approve(holder, amount).send({ from: owner });
             var allowance = await MyERC20.methods.allowance(owner, holder).call();
-            allowance.should.be.bignumber.equal(amount);
+            assert.equal(allowance, amount);
 
-            await MyERC20.methods.transferFrom(owner, receiver, toWei(7)).send({ from: holder });
+            await MyERC20.methods.transferFrom(owner, receiver, toWei('7')).send({ from: holder });
 
             allowance = await MyERC20.methods.allowance(owner, holder).call();
-            allowance.should.be.bignumber.equal(toWei(8));
+            assert.equal(allowance, toWei('8'));
           });
           it('it should emit a Transfer event when transferFrom is called', async () => {
             let owner = accounts[0];
             let holder = accounts[1];
             let receiver = accounts[2];
-            const amount = toWei(17);
-            await MyERC20.methods.approve(holder, amount).send({ from: owner });
-
-            const { events } = await MyERC20.methods.transferFrom(owner, receiver, amount).send({ from: holder });
+            const amount = toWei('17');
+            await MyERC20.methods.approve(holder, amount.toString()).send({ from: owner });
+            const { events } = await MyERC20.methods.transferFrom(owner, receiver, amount.toString()).send({ from: holder });
 
             assert.ok(events.Transfer, 'No Transfer Event emitted');
             assert.equal(Object.keys(events)[0], 'Transfer');
@@ -215,7 +218,3 @@ contract("MyERC20", function () {
     });
   });
 });
-
-function toWei(count) {
-  return count * 10 ** 18;
-}
